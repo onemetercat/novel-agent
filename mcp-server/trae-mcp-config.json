@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "novel-script-agent": {
+      "command": "python",
+      "args": [
+        "{PROJECT_PATH}/mcp-server/server.py"
+      ],
+      "env": {},
+      "disabled": false
+    }
+  }
+}

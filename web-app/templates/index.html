@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI小说和短剧剧本智能体</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin-top: 5px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: white;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #f8f8f8;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .content {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 20px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            padding: 20px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .history {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .history-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+        
+        .history-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-item:hover {
+            background: #f8f8f8;
+        }
+        
+        .history-item-info {
+            flex: 1;
+        }
+        
+        .history-item-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .history-item-time {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .btn-delete {
+            background: #ff4d4f;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .btn-delete:hover {
+            background: #ff7875;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .config-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .config-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-copy {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-copy:hover {
+            background: #218838;
+        }
+        
+        .btn-export {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-export:hover {
+            background: #0056b3;
+        }
+        
+        .path-input {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            width: 100%;
+        }
+        
+        .path-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .tip-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        
+        .tip-box strong {
+            color: #664d03;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI小说和短剧剧本智能体</h1>
+        <p>填写基本信息，一键生成完整的小说和短剧内容</p>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('novel')">小说生成</button>
+            <button class="tab" onclick="switchTab('script')">短剧生成</button>
+            <button class="tab" onclick="switchTab('mcp-config')">MCP配置</button>
+        </div>
+        
+        <div class="content">
+            <!-- 小说生成 -->
+            <div id="novel" class="section active">
+                <div class="form-group">
+                    <label>小说标题 *</label>
+                    <input type="text" id="novel-title" placeholder="请输入小说标题">
+                </div>
+                
+                <div class="form-group">
+                    <label>小说类型</label>
+                    <select id="novel-genre">
+                        <option value="玄幻">玄幻</option>
+                        <option value="都市">都市</option>
+                        <option value="仙侠">仙侠</option>
+                        <option value="科幻">科幻</option>
+                        <option value="悬疑">悬疑</option>
+                        <option value="言情">言情</option>
+                        <option value="历史">历史</option>
+                        <option value="奇幻">奇幻</option>
+                        <option value="武侠">武侠</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>主题思想</label>
+                    <input type="text" id="novel-theme" placeholder="如：少年逆袭、热血成长">
+                </div>
+                
+                <div class="form-group">
+                    <label>主要人物设定</label>
+                    <textarea id="novel-characters" placeholder="描述主要人物，如：武松（主角）；苏清雪（女主，青云宗圣女）；宋江（反派）"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>世界观设定</label>
+                    <textarea id="novel-world" placeholder="描述世界观、背景设定，如：水浒传世界观，融合武侠与玄幻元素"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>目标章节数</label>
+                    <input type="number" id="novel-chapters" value="200">
+                </div>
+                
+                <div class="form-group">
+                    <label>每章字数</label>
+                    <input type="number" id="novel-words" value="3000">
+                </div>
+                
+                <button class="btn" onclick="generate('novel')">生成小说</button>
+            </div>
+            
+            <!-- 短剧生成 -->
+            <div id="script" class="section">
+                <div class="form-group">
+                    <label>短剧标题 *</label>
+                    <input type="text" id="script-title" placeholder="请输入短剧标题">
+                </div>
+                
+                <div class="form-group">
+                    <label>短剧类型</label>
+                    <select id="script-genre">
+                        <option value="都市情感">都市情感</option>
+                        <option value="甜宠">甜宠</option>
+                        <option value="逆袭">逆袭</option>
+                        <option value="复仇">复仇</option>
+                        <option value="悬疑">悬疑</option>
+                        <option value="喜剧">喜剧</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>总集数</label>
+                    <input type="number" id="script-episodes" value="80">
+                </div>
+                
+                <div class="form-group">
+                    <label>每集时长</label>
+                    <input type="text" id="script-duration" value="3分钟">
+                </div>
+                
+                <div class="form-group">
+                    <label>主题</label>
+                    <textarea id="script-theme" placeholder="短剧主题思想..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>主要人物设定</label>
+                    <textarea id="script-characters" placeholder="描述主要人物..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>剧情简介</label>
+                    <textarea id="script-plot" placeholder="简述剧情..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="generate('script')">生成短剧</button>
+            </div>
+            
+            <!-- MCP配置导出 -->
+            <div id="mcp-config" class="section">
+                <div class="tip-box">
+                    <strong>使用方式：</strong>
+                    <p style="margin-top: 8px;">1. 在 Trae 对话框中让 Trae 用内置AI帮你生成内容</p>
+                    <p>2. 让 Trae 调用保存工具，内容会自动出现在这里</p>
+                    <p>3. 在下方历史记录中查看和导出</p>
+                </div>
+                
+                <div class="tip-box" style="background: #d1ecf1; border-color: #17a2b8; color: #0c5460;">
+                    <strong>小说生成示例：</strong>
+                    <div style="margin-top: 10px; font-family: monospace; font-size: 13px; white-space: pre-wrap;">
+<strong>你：</strong>请帮我生成一部武侠小说：
+  - 小说标题：《武松大战松江》
+  - 小说类型：武侠
+  - 主题思想：侠义精神、正道与邪道的对抗
+  - 主要人物设定：武松（主角）；苏清雪（女主，青云宗圣女）；宋江（反派）
+  - 世界观设定：水浒传世界观，融合武侠与玄幻元素
+  - 目标章节数：200
+  - 每章字数：3000
+
+<strong>Trae：</strong>（生成完整小说内容并显示给你）
+
+<strong>你：</strong>请把小说保存到Web页面
+
+<strong>Trae：</strong>（调用 save_novel_content 保存）
+
+<strong>你：</strong>刷新 http://localhost:5001 页面查看
+                    </div>
+                </div>
+                
+                <div class="tip-box" style="background: #d1ecf1; border-color: #17a2b8; color: #0c5460;">
+                    <strong>短剧生成示例：</strong>
+                    <div style="margin-top: 10px; font-family: monospace; font-size: 13px; white-space: pre-wrap;">
+<strong>你：</strong>请帮我生成一部都市情感短剧：
+  - 短剧标题：《总裁的替身娇妻》
+  - 短剧类型：都市情感
+  - 总集数：80
+  - 每集时长：3分钟
+  - 主题：替身娇妻逆袭复仇
+  - 主要人物设定：苏雨薇（女主）；顾寒舟（男主）；林心怡（反派）
+  - 剧情简介：女主被当作替身嫁入豪门，发现真相后逆袭复仇
+
+<strong>Trae：</strong>（生成完整短剧内容并显示给你）
+
+<strong>你：</strong>请把短剧保存到Web页面
+
+<strong>Trae：</strong>（调用 save_script_content 保存）
+
+<strong>你：</strong>刷新 http://localhost:5001 页面查看
+                    </div>
+                </div>
+                
+                <div class="tip-box" style="background: #f8d7da; border-color: #f5c6cb; color: #721c24;">
+                    <strong>可用 MCP 工具：</strong>
+                    <ul style="margin-top: 8px; padding-left: 20px;">
+                        <li><strong>save_novel_content</strong> - 保存小说内容（包含大纲和章节）</li>
+                        <li><strong>save_script_content</strong> - 保存短剧内容（包含大纲和场景）</li>
+                        <li><strong>list_saved_contents</strong> - 列出已保存内容</li>
+                        <li><strong>get_content_by_title</strong> - 按标题查看内容</li>
+                        <li><strong>delete_content_by_title</strong> - 按标题删除内容</li>
+                    </ul>
+                </div>
+                
+                <div class="form-group">
+                    <label>项目路径（请修改为你的实际路径）</label>
+                    <input type="text" class="path-input" id="project-path" value="/Users/riceballs/Desktop/code/trae_app/novel/novel-agent/mcp-server/server.py">
+                </div>
+                
+                <div class="form-group">
+                    <label>Python 路径（如果Python不在PATH中请修改）</label>
+                    <input type="text" class="path-input" id="python-path" value="python3">
+                </div>
+                
+                <label style="font-weight: 500; margin-bottom: 10px; display: block; color: #333;">MCP Server 配置（JSON格式）</label>
+                <div class="config-box" id="mcp-config-output"></div>
+                
+                <div class="config-actions">
+                    <button class="btn-copy" onclick="copyMcpConfig()">复制配置</button>
+                    <button class="btn-export" onclick="downloadMcpConfig()">下载配置文件</button>
+                </div>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">生成中，请稍候...</p>
+            </div>
+            
+            <!-- 结果展示 -->
+            <div class="result" id="result"></div>
+        </div>
+        
+        <!-- 历史记录 -->
+        <div class="history" id="history" style="display: none;">
+            <div class="history-header">历史记录</div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+    
+    <script>
+        let currentTab = 'novel';
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            
+            currentTab = tabName;
+            
+            if (tabName === 'mcp-config') {
+                updateMcpConfig();
+            }
+        }
+        
+        function updateMcpConfig() {
+            const projectPath = document.getElementById('project-path').value;
+            const pythonPath = document.getElementById('python-path').value;
+            
+            const config = {
+                "mcpServers": {
+                    "novel-script-agent": {
+                        "command": pythonPath,
+                        "args": [projectPath],
+                        "env": {},
+                        "disabled": false
+                    }
+                }
+            };
+            
+            document.getElementById('mcp-config-output').textContent = JSON.stringify(config, null, 4);
+        }
+        
+        function getMcpConfigJson() {
+            const projectPath = document.getElementById('project-path').value;
+            const pythonPath = document.getElementById('python-path').value;
+            
+            return JSON.stringify({
+                "mcpServers": {
+                    "novel-script-agent": {
+                        "command": pythonPath,
+                        "args": [projectPath],
+                        "env": {},
+                        "disabled": false
+                    }
+                }
+            }, null, 4);
+        }
+        
+        async function copyMcpConfig() {
+            const config = getMcpConfigJson();
+            try {
+                await navigator.clipboard.writeText(config);
+                alert('配置已复制到剪贴板！\n\n现在可以去 Trae IDE → 设置 → MCP Servers 中粘贴配置。');
+            } catch (error) {
+                const textarea = document.createElement('textarea');
+                textarea.value = config;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('配置已复制到剪贴板！');
+            }
+        }
+        
+        function downloadMcpConfig() {
+            const config = getMcpConfigJson();
+            const blob = new Blob([config], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mcp-config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        document.getElementById('project-path').addEventListener('input', updateMcpConfig);
+        document.getElementById('python-path').addEventListener('input', updateMcpConfig);
+        
+        async function generate(type) {
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            let data = {};
+            let endpoint = '';
+            
+            if (type === 'novel') {
+                endpoint = '/api/generate/novel';
+                data = {
+                    title: document.getElementById('novel-title').value,
+                    genre: document.getElementById('novel-genre').value,
+                    theme: document.getElementById('novel-theme').value,
+                    main_characters: document.getElementById('novel-characters').value,
+                    world_building: document.getElementById('novel-world').value,
+                    target_chapters: parseInt(document.getElementById('novel-chapters').value) || 200,
+                    target_words_per_chapter: parseInt(document.getElementById('novel-words').value) || 3000
+                };
+            } else if (type === 'script') {
+                endpoint = '/api/generate/script';
+                data = {
+                    title: document.getElementById('script-title').value,
+                    genre: document.getElementById('script-genre').value,
+                    episode_count: parseInt(document.getElementById('script-episodes').value) || 80,
+                    episode_duration: document.getElementById('script-duration').value,
+                    theme: document.getElementById('script-theme').value,
+                    main_characters: document.getElementById('script-characters').value,
+                    plot_summary: document.getElementById('script-plot').value
+                };
+            }
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultData = await response.json();
+                
+                if (resultData.success) {
+                    result.textContent = resultData.content;
+                    result.classList.add('show');
+                    loadHistory();
+                } else {
+                    alert('生成失败：' + (resultData.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('请求失败：' + error.message);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+        
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/contents');
+                const history = await response.json();
+                
+                if (history.length > 0) {
+                    const historyDiv = document.getElementById('history');
+                    const historyList = document.getElementById('history-list');
+                    historyDiv.style.display = 'block';
+                    historyList.innerHTML = '';
+                    
+                    history.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.innerHTML = `
+                            <div class="history-item-info">
+                                <div class="history-item-title">${item.title || '未命名'}</div>
+                                <div class="history-item-time">${new Date(item.created_at).toLocaleString('zh-CN')}</div>
+                            </div>
+                            <button class="btn-delete" data-filename="${item.filename || ''}">删除</button>
+                        `;
+                        div.querySelector('.history-item-info').onclick = () => {
+                            const result = document.getElementById('result');
+                            result.textContent = item.content;
+                            result.classList.add('show');
+                        };
+                        div.querySelector('.btn-delete').onclick = (e) => {
+                            e.stopPropagation();
+                            deleteContent(item.filename || '', item.title || '未命名');
+                        };
+                        historyList.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                console.error('加载历史失败:', error);
+            }
+        }
+        
+        async function deleteContent(filename, title) {
+            if (!filename) {
+                alert('无法删除：缺少文件信息');
+                return;
+            }
+            if (!confirm(`确定要删除「${title}」吗？`)) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/delete/${filename}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('已删除');
+                    loadHistory();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('删除失败：' + error.message);
+            }
+        }
+        
+        window.onload = function() {
+            loadHistory();
+            updateMcpConfig();
+        };
+    </script>
+</body>
+</html>
